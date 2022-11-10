@@ -18,6 +18,9 @@ SQUARE_SIZE = SCREEN_X/BOARD_SIZE
 def main():
     backBoard = fillList(0)
     frontBoard = fillList("[-]")
+    unChecked = fillUnchecked()
+    printBoardTest(unChecked)
+    
     gameRunning = True
     gameWon = False
     
@@ -35,6 +38,8 @@ def main():
     pygame.init()
     screen = pygame.display.set_mode([SCREEN_X, SCREEN_Y])
     running = True
+    screen.fill(LGRAY)
+    printLines(screen)
     while running:
 
         
@@ -48,15 +53,18 @@ def main():
                     mouseX,mouseY = pygame.mouse.get_pos()
                     print(f"{mouseX},{mouseY}")
                     print(getCellFromMouse(mouseX,mouseY))
-                    makeGuess(backBoard, frontBoard, getCellFromMouse(mouseX,mouseY))
+                    coords = getCellFromMouse(mouseX,mouseY)
+                    frontBoard = makeGuess(backBoard, frontBoard, coords)
+                    printBoardGame(frontBoard)
+                    printBoardScreen(screen,frontBoard,unChecked)
                 elif(event.button == 2):
                     print("Right click")
+                pygame.display.flip()
             elif event.type == pygame.KEYDOWN:
                 print("Key")
                 #right click
         # Fill the background with white
-        screen.fill(LGRAY)
-        printLines(screen)
+        
         #pygame.draw.line(screen, (0,0,0),())
 
         #gameRunning = gameLoop(frontBoard,backBoard,gameRunning,mines,gameWon)
@@ -83,6 +91,21 @@ def main():
 """
 Main loop for game
 """
+def fillUnchecked():
+    unChecked = []
+    for i in range(BOARD_SIZE):
+        for j in range(BOARD_SIZE):
+            unChecked.append((i,j))
+    return unChecked
+
+def printBoardScreen(screen, frontBoard, unChecked):
+    for x in unChecked:
+        if(frontBoard[x[0]][x[1]] != "[-]"):
+            printSquares(screen, getPos((x[0],x[1])))
+            unChecked.remove(x)
+    printBoardTest(unChecked)
+def printSquares(screen, squarePos):
+    pygame.draw.rect(screen, (255,255,255), [squarePos[1],squarePos[0], SQUARE_SIZE,SQUARE_SIZE])
 def printLines(screen):
     x,y = screen.get_size()
     
@@ -102,6 +125,11 @@ def getCoord(x):
         x-=SQUARE_SIZE
         out+=1
     return out
+
+def getPos(coords):
+    x = SQUARE_SIZE * coords[0]
+    y = SQUARE_SIZE * coords[1]
+    return (x,y)
 
 def gameLoop(frontBoard, backBoard, gameRunning, mines, gameWon):
     while(gameRunning):
@@ -177,7 +205,7 @@ def getMines(num):
     return mines
 
 def printBoardGame(board):
-    consoleClear()
+    #consoleClear()
     for i in range(BOARD_SIZE):
         out = ""
         for j in range(BOARD_SIZE):
