@@ -19,7 +19,6 @@ def main():
     backBoard = fillList(0)
     frontBoard = fillList("[-]")
     unChecked = fillUnchecked()
-    printBoardTest(unChecked)
     
     gameRunning = True
     gameWon = False
@@ -50,12 +49,14 @@ def main():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 #left click
                 if(event.button == 1):
+                    #Get mouse pos
                     mouseX,mouseY = pygame.mouse.get_pos()
-                    print(f"{mouseX},{mouseY}")
-                    print(getCellFromMouse(mouseX,mouseY))
+                    #Get coordinates from mouse pos
                     coords = getCellFromMouse(mouseX,mouseY)
+                    #Make guess and update board
                     frontBoard = makeGuess(backBoard, frontBoard, coords)
                     printBoardGame(frontBoard)
+                    #Update screen
                     printBoardScreen(screen,frontBoard,unChecked)
                 elif(event.button == 2):
                     print("Right click")
@@ -99,13 +100,18 @@ def fillUnchecked():
     return unChecked
 
 def printBoardScreen(screen, frontBoard, unChecked):
-    for x in unChecked:
-        if(frontBoard[x[0]][x[1]] != "[-]"):
-            printSquares(screen, getPos((x[0],x[1])))
-            unChecked.remove(x)
-    printBoardTest(unChecked)
+    i = 0
+    while i < len(unChecked):
+        if(frontBoard[unChecked[i][0]][unChecked[i][1]] != "[-]"):
+            printSquares(screen, getPos((unChecked[i][0],unChecked[i][1])))
+            printLines(screen)
+            unChecked.remove(unChecked[i])
+            i-=1
+        i+=1
+
 def printSquares(screen, squarePos):
-    pygame.draw.rect(screen, (255,255,255), [squarePos[1],squarePos[0], SQUARE_SIZE,SQUARE_SIZE])
+    pygame.draw.rect(screen, (255,255,255), [squarePos[1],squarePos[0], SQUARE_SIZE+1,SQUARE_SIZE+1])
+
 def printLines(screen):
     x,y = screen.get_size()
     
