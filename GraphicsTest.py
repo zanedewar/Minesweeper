@@ -47,19 +47,21 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                #Get mouse pos
+                mouseX,mouseY = pygame.mouse.get_pos()
+                #Get coordinates from mouse pos
+                coords = getCellFromMouse(mouseX,mouseY)
                 #left click
-                if(event.button == 1):
-                    #Get mouse pos
-                    mouseX,mouseY = pygame.mouse.get_pos()
-                    #Get coordinates from mouse pos
-                    coords = getCellFromMouse(mouseX,mouseY)
+                if(event.button == 1):    
                     #Make guess and update board
                     frontBoard = makeGuess(backBoard, frontBoard, coords)
                     printBoardGame(frontBoard)
-                    #Update screen
-                    printBoardScreen(screen,frontBoard,unChecked)
-                elif(event.button == 2):
+                    print()
+                elif(event.button == 3):
                     print("Right click")
+                    frontBoard[coords[0]][coords[1]] = RED_FLAG
+                #Update screen
+                printBoardScreen(screen,frontBoard,unChecked,backBoard)
                 pygame.display.flip()
             elif event.type == pygame.KEYDOWN:
                 print("Key")
@@ -99,15 +101,101 @@ def fillUnchecked():
             unChecked.append((i,j))
     return unChecked
 
-def printBoardScreen(screen, frontBoard, unChecked):
+def printBoardScreen(screen, frontBoard, unChecked,backBoard):
     i = 0
     while i < len(unChecked):
-        if(frontBoard[unChecked[i][0]][unChecked[i][1]] != "[-]"):
-            printSquares(screen, getPos((unChecked[i][0],unChecked[i][1])))
+        curr = unChecked[i]
+        if(frontBoard[curr[0]][curr[1]] != "[-]"):
+            printSquares(screen, getPos((curr[0],curr[1])))
             printLines(screen)
-            unChecked.remove(unChecked[i])
-            i-=1
+            if(frontBoard[curr[0]][curr[1]] == RED_FLAG):
+                printFlag(screen, curr)
+            else:
+                printNums(screen,curr,backBoard)
+                unChecked.remove(unChecked[i])
+                i-=1
         i+=1
+
+def printFlag(screen, curr):
+    currPos = swap(getPos(curr))
+    x = currPos[0]
+    y = currPos[1]
+    r1 = pygame.Rect(getPoints(x, 1, 4), getPoints(y, 1, 6), SQUARE_SIZE * .5, SQUARE_SIZE * .4)
+    pygame.draw.rect(screen, (255,0,0), r1)
+    pygame.draw.line(screen, (255,0,0), (getPoints(x, 3, 4), getPoints(y, 1, 6)), (getPoints(x, 3, 4), getPoints(y, 5, 6)), 3)
+
+def printNums(screen, currCell, backBoard):
+    val = backBoard[currCell[0]][currCell[1]]
+    cellPos = getPos(currCell)
+    cellPos = swap(cellPos)
+    points = []
+    x = cellPos[0]
+    y = cellPos[1]
+    
+    
+    oneSixthY = getPoints(y, 1, 6)
+    fiveSixthY = getPoints(y, 5, 6)
+    oneHalfX = getPoints(x, 1, 2)
+    oneHalfY = getPoints(y, 1, 2)
+    oneFourthX = getPoints(x, 1, 4)
+    threeFourthsX = getPoints(x, 3, 4)
+    
+    #Segment points
+    p1 = (oneFourthX, oneSixthY)
+    p2 = (threeFourthsX,oneSixthY)
+    p3 = (p2[0], oneHalfY)
+    p4 = (p1[0], p3[1])
+    p5 = (p4[0], fiveSixthY)
+    p6 = (p2[0],p5[1])
+
+    if(val == 1):
+        p1 = (oneFourthX, getPoints(y, 1, 3))
+        p2 = (oneHalfX, oneSixthY)
+        p3 = (p2[0],fiveSixthY)
+        p4 = (oneFourthX,p3[1])
+        p5 = (threeFourthsX,p3[1])
+        points = [p1,p2,p2,p3,p4,p5]
+        color = (0,0,255)
+        
+    elif(val == 2 or val == 3 or val == 7):
+        if(val == 2):
+            points = [p1,p2,p2,p3,p3,p4,p4,p5,p5,p6]
+            color = (0,255,0)
+        elif(val == 3):
+            points = [p1,p2,p2,p3,p3,p4,p3,p6,p5,p6]
+            color = (0,100,100)
+        else:
+            points = [p1,p2,p2,p6]
+            color = (255,0,127)
+    
+    elif(val == 4):
+        points = [p1,p4,p4,p3,p2,p6]
+        color = (255, 0, 255)
+
+    elif(val == 5 or val == 6):
+        points = [p1,p2,p1,p4,p4,p3,p3,p6,p6,p5]
+        if(val == 5):
+            color = (255, 128, 0)
+        else:
+            points.append(p5)
+            points.append(p4)
+            color = (0, 0, 0)
+    elif(val == 8):
+        points = [p1,p5,p5,p6,p6,p2,p2,p1,p1,p4,p3,p4]
+        color = (255,102,178)
+    
+    elif(val == 9 or val == -1):
+        points = [p2,p1,p1,p4,p4,p3,p3,p2,p2,p6,p6,p5]
+        color = (255,0,0)
+
+    
+    for i in range(len(points) - 1):
+            pygame.draw.line(screen, color, points[i], points[i+1], 5)
+            i+=1
+
+
+def getPoints(cellPos, num, den):
+    return (cellPos + (SQUARE_SIZE * (num/den)))
 
 def printSquares(screen, squarePos):
     pygame.draw.rect(screen, (255,255,255), [squarePos[1],squarePos[0], SQUARE_SIZE+1,SQUARE_SIZE+1])
