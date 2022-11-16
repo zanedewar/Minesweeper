@@ -4,6 +4,7 @@ import pygame
 BOARD_SIZE = 8
 NUM_MINES = BOARD_SIZE + int(BOARD_SIZE * .25)
 HIT_MINE = False
+REAL_HIT_MINE = False
 FLAG = "\u2691"
 BOMB = u"\U0001F4A3"
 flagFlag = False
@@ -16,6 +17,8 @@ SCREEN_Y = 500
 SQUARE_SIZE = SCREEN_X/BOARD_SIZE
 
 def main():
+    global HIT_MINE
+    global REAL_HIT_MINE
     backBoard = fillList(0)
     frontBoard = fillList("[-]")
     unChecked = fillUnchecked()
@@ -40,56 +43,71 @@ def main():
     screen.fill(LGRAY)
     printLines(screen)
     while running:
+        while gameRunning:
+            # Did the user click the window close button?
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.MOUSEBUTTONDOWN and not REAL_HIT_MINE:
+                    #Get mouse pos
+                    mouseX,mouseY = pygame.mouse.get_pos()
+                    #Get coordinates from mouse pos
+                    coords = getCellFromMouse(mouseX,mouseY)
+                    #left click
+                    if(event.button == 1):    
+                        #Make guess and update board
+                        frontBoard = makeGuess(backBoard, frontBoard, coords)
+                        printBoardGame(frontBoard)
+                        print()
+                    elif(event.button == 3):
+                        print("Right click")
+                        frontBoard[coords[0]][coords[1]] = RED_FLAG
+                    #Update screen
+                    printBoardScreen(screen,frontBoard,unChecked,backBoard)
+                    pygame.display.flip()
+                elif event.type == pygame.KEYDOWN:
+                    print("Key")
+                    #right click
+                
+            if(HIT_MINE):
+                break
+            for row in frontBoard:
+                gameRunning = False
+                if("[-]" in row):
+                    gameRunning = True
+                    break
+            for (x,y) in mines:
+                if(frontBoard[x][y] != RED_FLAG):
+                    gameRunning = True
+                    break
+            if(not gameRunning):
+                gameWon = True
+                break
+            #gameRunning = gameLoop(frontBoard,backBoard,gameRunning,mines,gameWon)
 
-        
-        # Did the user click the window close button?
+            # Flip the display
+            pygame.display.flip()
+
+        # Done! Time to quit.
+        if(HIT_MINE):
+            consoleClear()
+            showMines(frontBoard,backBoard,screen,mines)
+            printBoardScreen(screen,frontBoard,unChecked,backBoard)
+            printBoardGame(frontBoard)
+            print("Better luck next time!")
+            HIT_MINE = False
+            REAL_HIT_MINE = True
+            #gameRunning = False
+        elif(not gameRunning and gameWon):
+            print("Good job!")
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                #Get mouse pos
-                mouseX,mouseY = pygame.mouse.get_pos()
-                #Get coordinates from mouse pos
-                coords = getCellFromMouse(mouseX,mouseY)
-                #left click
-                if(event.button == 1):    
-                    #Make guess and update board
-                    frontBoard = makeGuess(backBoard, frontBoard, coords)
-                    printBoardGame(frontBoard)
-                    print()
-                elif(event.button == 3):
-                    print("Right click")
-                    frontBoard[coords[0]][coords[1]] = RED_FLAG
-                #Update screen
-                printBoardScreen(screen,frontBoard,unChecked,backBoard)
-                pygame.display.flip()
-            elif event.type == pygame.KEYDOWN:
-                print("Key")
-                #right click
-        # Fill the background with white
         
-        #pygame.draw.line(screen, (0,0,0),())
-
-        #gameRunning = gameLoop(frontBoard,backBoard,gameRunning,mines,gameWon)
-
-        # Draw a solid blue circle in the center
-
-        # Flip the display
-        pygame.display.flip()
-
-    # Done! Time to quit.
     pygame.quit()
     
 
-    if(HIT_MINE):
-        consoleClear()
-        showMines(frontBoard,backBoard)
-        printBoardGame(frontBoard)
-        print("Better luck next time!")
-    elif(not gameRunning and gameWon):
-        print("Good job!")
-    else:
-        print("Goodbye")
+    
     
 """
 Main loop for game
@@ -109,20 +127,20 @@ def printBoardScreen(screen, frontBoard, unChecked,backBoard):
             printSquares(screen, getPos((curr[0],curr[1])))
             printLines(screen)
             if(frontBoard[curr[0]][curr[1]] == RED_FLAG):
-                printFlag(screen, curr)
+                printFlag(screen, curr, (255,0,0))
             else:
                 printNums(screen,curr,backBoard)
                 unChecked.remove(unChecked[i])
                 i-=1
         i+=1
 
-def printFlag(screen, curr):
+def printFlag(screen, curr, color):
     currPos = swap(getPos(curr))
     x = currPos[0]
     y = currPos[1]
     r1 = pygame.Rect(getPoints(x, 1, 4), getPoints(y, 1, 6), SQUARE_SIZE * .5, SQUARE_SIZE * .4)
-    pygame.draw.rect(screen, (255,0,0), r1)
-    pygame.draw.line(screen, (255,0,0), (getPoints(x, 3, 4), getPoints(y, 1, 6)), (getPoints(x, 3, 4), getPoints(y, 5, 6)), 3)
+    pygame.draw.rect(screen, color, r1)
+    pygame.draw.line(screen, color, (getPoints(x, 3, 4), getPoints(y, 1, 6)), (getPoints(x, 3, 4), getPoints(y, 5, 6)), 3)
 
 def printNums(screen, currCell, backBoard):
     val = backBoard[currCell[0]][currCell[1]]
@@ -415,14 +433,15 @@ def getValueColor(val):
         out += "36m"
     return out
 
-def showMines(frontBoard, backBoard):
-    for i in range(BOARD_SIZE):
-        for j in range(BOARD_SIZE):
-            if(backBoard[i][j] == -1):
-                if(frontBoard[i][j] != RED_FLAG):
-                    frontBoard[i][j] = buildValueString(-1)
-                else:
-                    frontBoard[i][j] = "\u001b[32m["+FLAG+"]\033[0m"
+def showMines(frontBoard, backBoard, screen, mines):
+    for (i,j) in mines:
+        printSquares(screen, (i,j))
+        if(frontBoard[i][j] != RED_FLAG):
+            printNums(screen, (i,j), backBoard)
+            frontBoard[i][j] = buildValueString(-1)
+        else:
+            printFlag(screen, (i,j), (0,255,0))
+            frontBoard[i][j] = "\u001b[32m["+FLAG+"]\033[0m"
     return frontBoard
 
 def buildValueString(val):
