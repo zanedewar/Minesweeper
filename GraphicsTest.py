@@ -1,6 +1,7 @@
 import random
 import os
 import pygame
+import datetime
 BOARD_SIZE = 8
 NUM_MINES = BOARD_SIZE + int(BOARD_SIZE * .25)
 HIT_MINE = False
@@ -12,9 +13,10 @@ RED_FLAG = "\u001b[31m["+FLAG+"]\033[0m"
 RAND_GUESS = (random.randint(-999, 0),random.randint(-999,0))
 BLACK = (0,0,0)
 LGRAY = (50,50,50)
-SCREEN_X = 500
-SCREEN_Y = 500
+SCREEN_X = 600
+SCREEN_Y = 600
 SQUARE_SIZE = SCREEN_X/BOARD_SIZE
+CHECKED = []
 
 def main():
     global HIT_MINE
@@ -49,6 +51,7 @@ def main():
                 if event.type == pygame.QUIT:
                     running = False
                 elif event.type == pygame.MOUSEBUTTONDOWN and not REAL_HIT_MINE:
+                    startTime = datetime.datetime.now()
                     #Get mouse pos
                     mouseX,mouseY = pygame.mouse.get_pos()
                     #Get coordinates from mouse pos
@@ -57,7 +60,7 @@ def main():
                     if(event.button == 1):    
                         #Make guess and update board
                         frontBoard = makeGuess(backBoard, frontBoard, coords)
-                        printBoardGame(frontBoard)
+                        #printBoardGame(frontBoard)
                         print()
                     elif(event.button == 3):
                         print("Right click")
@@ -65,6 +68,8 @@ def main():
                     #Update screen
                     printBoardScreen(screen,frontBoard,unChecked,backBoard)
                     pygame.display.flip()
+                    endTime = datetime.datetime.now()
+                    print(endTime - startTime)
                 elif event.type == pygame.KEYDOWN:
                     print("Key")
                     #right click
@@ -77,18 +82,21 @@ def main():
                     gameRunning = True
                     break
             for (x,y) in mines:
-                if(frontBoard[x][y] != RED_FLAG):
+                if(frontBoard[x][y] != RED_FLAG and frontBoard[x][y] != "\u001b[32m["+FLAG+"]\033[0m"):
                     gameRunning = True
                     break
             if(not gameRunning):
                 gameWon = True
                 break
+            if(REAL_HIT_MINE):
+                showMines(frontBoard,backBoard,screen,mines)
             #gameRunning = gameLoop(frontBoard,backBoard,gameRunning,mines,gameWon)
 
             # Flip the display
             pygame.display.flip()
 
         # Done! Time to quit.
+        
         if(HIT_MINE):
             consoleClear()
             showMines(frontBoard,backBoard,screen,mines)
@@ -99,7 +107,11 @@ def main():
             REAL_HIT_MINE = True
             #gameRunning = False
         elif(not gameRunning and gameWon):
+            printGreenFlags(screen,mines)
             print("Good job!")
+            REAL_HIT_MINE = True
+            gameWon = False
+            pygame.display.flip()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -121,19 +133,21 @@ def fillUnchecked():
 
 def printBoardScreen(screen, frontBoard, unChecked,backBoard):
     i = 0
-    while i < len(unChecked):
-        curr = unChecked[i]
-        if(frontBoard[curr[0]][curr[1]] != "[-]"):
-            printSquares(screen, getPos((curr[0],curr[1])))
-            printLines(screen)
-            if(frontBoard[curr[0]][curr[1]] == RED_FLAG):
-                printFlag(screen, curr, (255,0,0))
-            else:
-                printNums(screen,curr,backBoard)
-                unChecked.remove(unChecked[i])
-                i-=1
+    while i < len(CHECKED):
+        curr = CHECKED[i]
+        printSquares(screen, getPos((curr[0],curr[1])))
+        printLines(screen)
+        if(frontBoard[curr[0]][curr[1]] == RED_FLAG):
+            printFlag(screen, curr, (255,0,0))
+        else:
+            printNums(screen,curr,backBoard)
+            CHECKED.remove(CHECKED[i])
+            i-=1
         i+=1
 
+def printGreenFlags(screen, mines):
+    for (x,y) in mines:
+        printFlag(screen,(x,y), (0,255,0))
 def printFlag(screen, curr, color):
     currPos = swap(getPos(curr))
     x = currPos[0]
@@ -178,7 +192,7 @@ def printNums(screen, currCell, backBoard):
     elif(val == 2 or val == 3 or val == 7):
         if(val == 2):
             points = [p1,p2,p2,p3,p3,p4,p4,p5,p5,p6]
-            color = (0,255,0)
+            color = (0,247,239)
         elif(val == 3):
             points = [p1,p2,p2,p3,p3,p4,p3,p6,p5,p6]
             color = (0,100,100)
@@ -331,12 +345,8 @@ def printBoardTest(board):
 
 #Check if cells exist to left, right, up, or down
 def getCells(i,j):
-    ret = []
+    ret = [j-1 > -1, j+1 < BOARD_SIZE, i-1 > -1, i+1 < BOARD_SIZE]
     #left[0], right[1], up[2], down[3]
-    ret.append(j-1 > -1)
-    ret.append(j+1 < BOARD_SIZE)
-    ret.append(i-1 > -1)
-    ret.append(i+1 < BOARD_SIZE)
     return ret
 
 """
@@ -347,6 +357,7 @@ If value is 0, reveal all cells around it by calling makeGuess recursively
 """
 def makeGuess(backBoard, frontBoard, guess):
     global HIT_MINE
+    global CHECKED
     val = backBoard[guess[0]][guess[1]]
     if(val == -1):
         HIT_MINE = True
@@ -372,6 +383,7 @@ def makeGuess(backBoard, frontBoard, guess):
         if(cells[3]):
             frontBoard = makeGuess(backBoard, frontBoard, (guess[0]+1, guess[1])) if frontBoard[guess[0]+1][guess[1]] != "" else frontBoard
     frontBoard[guess[0]][guess[1]] = buildValueString(val)
+    CHECKED.append((guess[0],guess[1]))
     return frontBoard
 
 
@@ -409,39 +421,21 @@ def getCount(board, cells, i, j):
 #Gets appropriate color code for given value
 def getValueColor(val):
     out = "\u001b["
-    if val == 0:
-        #white
-        out += "37m"
-    elif val == 1:
-        #blue
-        out += "34m"
-    elif val == 2:
-        #green
-        out += "32m"
-    elif val == 4:
-        #purple
-        out += "35m"
-    elif val == 6:
-        #black
-        out += "30m"
-    elif val == 7:
-        #yellow
-        out += "33m"
-    elif val == 9:
-        out += "31m"
-    else:
-        out += "36m"
+    colors = ["37", "34", "32", "36", "35", "36", "30", "33", "36", "31"]
+    out += colors[val] + "m"
     return out
 
 def showMines(frontBoard, backBoard, screen, mines):
+    greenFlag = "\u001b[32m["+FLAG+"]\033[0m"
     for (i,j) in mines:
-        printSquares(screen, (i,j))
-        if(frontBoard[i][j] != RED_FLAG):
+        printSquares(screen, getPos((i,j)))
+        if(frontBoard[i][j] != RED_FLAG and frontBoard[i][j] != greenFlag):
             printNums(screen, (i,j), backBoard)
             frontBoard[i][j] = buildValueString(-1)
         else:
             printFlag(screen, (i,j), (0,255,0))
-            frontBoard[i][j] = "\u001b[32m["+FLAG+"]\033[0m"
+            frontBoard[i][j] = greenFlag
+    printLines(screen)
     return frontBoard
 
 def buildValueString(val):
