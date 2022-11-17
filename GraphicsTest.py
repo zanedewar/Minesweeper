@@ -2,7 +2,7 @@ import random
 import os
 import pygame
 import datetime
-BOARD_SIZE = 9
+BOARD_SIZE = 5
 NUM_MINES = BOARD_SIZE + int(BOARD_SIZE * .25)
 HIT_MINE = False
 REAL_HIT_MINE = False
@@ -105,7 +105,6 @@ def main():
         # Done! Time to quit.
         
         if(HIT_MINE):
-            consoleClear()
             showMines(frontBoard,backBoard,screen,mines)
             printBoardScreen(screen,frontBoard,unChecked,backBoard)
             printBoardGame(frontBoard)
@@ -282,44 +281,6 @@ def getPos(coords):
     y = SQUARE_SIZE * coords[1]
     return (x,y)
 
-def gameLoop(frontBoard, backBoard, gameRunning, mines, gameWon):
-    global game_loop
-    game_loop += 1
-    while(gameRunning):
-        if(HIT_MINE):
-            break
-        for row in frontBoard:
-            gameRunning = False
-            if("[-]" in row):
-                gameRunning = True
-                break
-        for (x,y) in mines:
-            if(frontBoard[x][y] != RED_FLAG):
-                gameRunning = True
-                break
-        if(not gameRunning):
-            gameWon = True
-            break
-            
-        currGuess = guess()
-        while(flagFlag):
-            print("FLAG MODE (PUT IN CELL OR 'f' TO RETURN)")
-            currGuess = guess()
-            if(currGuess != RAND_GUESS):
-                while(invalidGuess(currGuess)):
-                    print("Invalid guess")
-                    currGuess = guess()
-                currGuess = swap(currGuess)
-                frontBoard[currGuess[0]][currGuess[1]] = RED_FLAG
-            printBoardGame(frontBoard)
-        if(currGuess != RAND_GUESS):
-            while(invalidGuess(currGuess)):
-                print("Invalid guess")
-                currGuess = guess()
-            currGuess = swap(currGuess)
-            frontBoard = makeGuess(backBoard, frontBoard, currGuess)
-            printBoardGame(frontBoard)
-    return gameRunning
 
 #swap values in tuple to correspond with arrays
 def swap(x):
@@ -329,21 +290,6 @@ def swap(x):
     #print("Swap after increment: " + str(sWap))
     #print("WE ARE SWAPPING")
     return (x[1], x[0])
-
-def consoleClear():
-    #os.system('cls')
-    print()
-
-#get user guess or change modes
-def guess():
-    global guEss
-    guEss += 1
-    global flagFlag
-    userGuess = input("Enter space-seperated x,y values: ")
-    if(userGuess.lower() == "f"):
-        flagFlag = not flagFlag
-        return RAND_GUESS
-    return tuple(int(item)-1 for item in userGuess.split())
 
 def invalidGuess(guess):
     return (guess[0] < 0 or guess[0] > BOARD_SIZE - 1) or (guess[1] < 0 or guess[1] > BOARD_SIZE - 1)
@@ -370,7 +316,6 @@ def getMines(num):
     return mines
 
 def printBoardGame(board):
-    #consoleClear()
     for i in range(BOARD_SIZE):
         out = ""
         for j in range(BOARD_SIZE):
@@ -411,7 +356,7 @@ def makeGuess(backBoard, frontBoard, guess):
         frontBoard[x][y0] = ""
         if(cells[0] and frontBoard[x][y0-1] != ""):
             y = y0-1
-            frontBoard = makeGuess(backBoard, frontBoard, (x,y))
+            frontBoard = makeGuess(backBoard, frontBoard, (x,y)) 
             if(cells[2] and frontBoard[x-1][y] != ""):
                 frontBoard = makeGuess(backBoard, frontBoard, (x-1,y))
             if(cells[3] and frontBoard[x+1][y] != ""):
