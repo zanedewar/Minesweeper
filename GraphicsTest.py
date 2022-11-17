@@ -2,7 +2,7 @@ import random
 import os
 import pygame
 import datetime
-BOARD_SIZE = 8
+BOARD_SIZE = 12
 NUM_MINES = BOARD_SIZE + int(BOARD_SIZE * .25)
 HIT_MINE = False
 REAL_HIT_MINE = False
@@ -17,6 +17,13 @@ SCREEN_X = 600
 SCREEN_Y = 600
 SQUARE_SIZE = SCREEN_X/BOARD_SIZE
 TIMES = []
+MAKE_GUESS_TIMES = []
+fill_unchecked, print_board_screen, print_green_flags, print_flag, print_nums, get_points, print_squares, print_lines, get_cell, get_coord, get_pos = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+game_loop, sWap, clear, guEss, fill_list, get_mines, get_cells, make_guess, get_front_board, get_count, get_value_color, show_mines = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+FUNC_LIST = ["fillUnchecked", "printBoardScreen", "printGreenFlags", "printFlag", "printNums", "getPoints", "printSquares", "printLines", "getCell", "getCoord", "getPos",
+"gameLoop", "swap", "clear", "guess", "fillList", "getMines", "getCells", "makeGuess", "getFrontBoard", "getCount", "getValueColor", "showMines"]
+
+
 
 def main():
     global HIT_MINE
@@ -70,10 +77,11 @@ def main():
                     pygame.display.flip()
                     time = datetime.datetime.now() - start_time
                     TIMES.append(time)
+                    printFuncs()
                 elif event.type == pygame.KEYDOWN:
                     print("Key")
                     #right click
-                
+            
             if(HIT_MINE):
                 break
             for row in frontBoard:
@@ -91,7 +99,6 @@ def main():
             if(REAL_HIT_MINE):
                 showMines(frontBoard,backBoard,screen,mines)
             #gameRunning = gameLoop(frontBoard,backBoard,gameRunning,mines,gameWon)
-
             # Flip the display
             pygame.display.flip()
 
@@ -112,15 +119,22 @@ def main():
             REAL_HIT_MINE = True
             gameWon = False
             pygame.display.flip()
-        timeSum = 0
-        for time in TIMES:
-            print(time)
-            timeSum += time.total_seconds()
-        print("Average: " + str((timeSum / len(TIMES))))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-        
+    timeSum = 0
+    for time in TIMES:
+        print(time)
+        timeSum += time.total_seconds()
+    print("Average: " + str((timeSum / len(TIMES))))
+    timeSum = 0
+    print("Make Guess Times:")
+    for time in MAKE_GUESS_TIMES:
+        print(time)
+        timeSum += time.total_seconds()
+    print("Average: " + str((timeSum / len(MAKE_GUESS_TIMES))))
+    print("final:")
+    printFuncs()
     pygame.quit()
     
 
@@ -130,6 +144,8 @@ def main():
 Main loop for game
 """
 def fillUnchecked():
+    global fill_unchecked
+    fill_unchecked += 1
     unChecked = []
     for i in range(BOARD_SIZE):
         for j in range(BOARD_SIZE):
@@ -137,6 +153,8 @@ def fillUnchecked():
     return unChecked
 
 def printBoardScreen(screen, frontBoard, unChecked,backBoard):
+    global print_board_screen
+    print_board_screen += 1
     i = 0
     while i < len(unChecked):
         curr = unChecked[i]
@@ -152,9 +170,13 @@ def printBoardScreen(screen, frontBoard, unChecked,backBoard):
         i+=1
 
 def printGreenFlags(screen, mines):
+    global print_green_flags
+    print_green_flags += 1
     for (x,y) in mines:
         printFlag(screen,(x,y), (0,255,0))
 def printFlag(screen, curr, color):
+    global print_flag
+    print_flag += 1
     currPos = swap(getPos(curr))
     x = currPos[0]
     y = currPos[1]
@@ -163,6 +185,8 @@ def printFlag(screen, curr, color):
     pygame.draw.line(screen, color, (getPoints(x, 3, 4), getPoints(y, 1, 6)), (getPoints(x, 3, 4), getPoints(y, 5, 6)), 3)
 
 def printNums(screen, currCell, backBoard):
+    global print_nums
+    print_nums += 1
     val = backBoard[currCell[0]][currCell[1]]
     cellPos = getPos(currCell)
     cellPos = swap(cellPos)
@@ -208,12 +232,18 @@ def printNums(screen, currCell, backBoard):
 
 
 def getPoints(cellPos, num, den):
+    global get_points
+    get_points += 1
     return (cellPos + (SQUARE_SIZE * (num/den)))
 
 def printSquares(screen, squarePos):
+    global print_squares
+    print_squares += 1
     pygame.draw.rect(screen, (255,255,255), [squarePos[1],squarePos[0], SQUARE_SIZE+1,SQUARE_SIZE+1])
 
 def printLines(screen):
+    global print_lines
+    print_lines += 1
     x,y = screen.get_size()
     
     for i in range(BOARD_SIZE-1):
@@ -222,11 +252,15 @@ def printLines(screen):
         pygame.draw.line(screen,BLACK,(0,(i+1)*SQUARE_SIZE),(x,(i+1)*SQUARE_SIZE))
 
 def getCellFromMouse(x,y):
+    global get_cell
+    get_cell += 1
     cellX = getCoord(x)
     cellY = getCoord(y)
     return swap((cellX,cellY))
 
 def getCoord(x):
+    global get_coord
+    get_coord += 1
     out = -1
     while(x > 0):
         x-=SQUARE_SIZE
@@ -234,11 +268,15 @@ def getCoord(x):
     return out
 
 def getPos(coords):
+    global get_pos
+    get_pos += 1
     x = SQUARE_SIZE * coords[0]
     y = SQUARE_SIZE * coords[1]
     return (x,y)
 
 def gameLoop(frontBoard, backBoard, gameRunning, mines, gameWon):
+    global game_loop
+    game_loop += 1
     while(gameRunning):
         if(HIT_MINE):
             break
@@ -277,13 +315,21 @@ def gameLoop(frontBoard, backBoard, gameRunning, mines, gameWon):
 
 #swap values in tuple to correspond with arrays
 def swap(x):
+    global sWap
+    #print("Swap: " + str(sWap))
+    sWap += 1
+    #print("Swap after increment: " + str(sWap))
+    #print("WE ARE SWAPPING")
     return (x[1], x[0])
 
 def consoleClear():
-    os.system('cls')
+    #os.system('cls')
+    print()
 
 #get user guess or change modes
 def guess():
+    global guEss
+    guEss += 1
     global flagFlag
     userGuess = input("Enter space-seperated x,y values: ")
     if(userGuess.lower() == "f"):
@@ -295,6 +341,8 @@ def invalidGuess(guess):
     return (guess[0] < 0 or guess[0] > BOARD_SIZE - 1) or (guess[1] < 0 or guess[1] > BOARD_SIZE - 1)
 
 def fillList(char):
+    global fill_list
+    fill_list += 1
     retBoard = []
     for i in range(BOARD_SIZE):
         fillList = []
@@ -304,6 +352,8 @@ def fillList(char):
     return retBoard
 
 def getMines(num):
+    global get_mines
+    get_mines += 1
     mines = []
     for i in range(num):
         x = random.randint(0,BOARD_SIZE-1)
@@ -326,6 +376,8 @@ def printBoardTest(board):
 
 #Check if cells exist to left, right, up, or down
 def getCells(i,j):
+    global get_cells
+    get_cells += 1
     ret = [j-1 > -1, j+1 < BOARD_SIZE, i-1 > -1, i+1 < BOARD_SIZE]
     #left[0], right[1], up[2], down[3]
     return ret
@@ -337,7 +389,10 @@ If value is any number other than 0 print it as normal
 If value is 0, reveal all cells around it by calling makeGuess recursively
 """
 def makeGuess(backBoard, frontBoard, guess):
+    global make_guess
+    make_guess += 1
     global HIT_MINE
+    start_time = datetime.datetime.now()
     val = backBoard[guess[0]][guess[1]]
     if(val == -1):
         HIT_MINE = True
@@ -363,6 +418,8 @@ def makeGuess(backBoard, frontBoard, guess):
         if(cells[3]):
             frontBoard = makeGuess(backBoard, frontBoard, (guess[0]+1, guess[1])) if frontBoard[guess[0]+1][guess[1]] != "" else frontBoard
     frontBoard[guess[0]][guess[1]] = buildValueString(val)
+    time = datetime.datetime.now() - start_time
+    MAKE_GUESS_TIMES.append(time)
     return frontBoard
 
 
@@ -405,6 +462,8 @@ def getValueColor(val):
     return out
 
 def showMines(frontBoard, backBoard, screen, mines):
+    global show_mines
+    show_mines += 1
     greenFlag = "\u001b[32m["+FLAG+"]\033[0m"
     for (i,j) in mines:
         printSquares(screen, getPos((i,j)))
@@ -420,6 +479,12 @@ def showMines(frontBoard, backBoard, screen, mines):
 def buildValueString(val):
     val = 9 if val == -1 else val
     return getValueColor(val)+"["+str(val)+"]\033[0m"
+
+def printFuncs():
+    func_var_list = [fill_unchecked, print_board_screen, print_green_flags, print_flag, print_nums, get_points, print_squares, print_lines, get_cell, get_coord, get_pos,
+game_loop, sWap, clear, guEss, fill_list, get_mines, get_cells, make_guess, get_front_board, get_count, get_value_color, show_mines]
+    for i in range(len(FUNC_LIST)):
+        print(f"{FUNC_LIST[i]}: {func_var_list[i]}")
 
 if __name__ == "__main__":
     main()
