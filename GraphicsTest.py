@@ -2,7 +2,7 @@ import random
 import os
 import pygame
 import datetime
-BOARD_SIZE = 12
+BOARD_SIZE = 9
 NUM_MINES = BOARD_SIZE + int(BOARD_SIZE * .25)
 HIT_MINE = False
 REAL_HIT_MINE = False
@@ -19,9 +19,9 @@ SQUARE_SIZE = SCREEN_X/BOARD_SIZE
 TIMES = []
 MAKE_GUESS_TIMES = []
 fill_unchecked, print_board_screen, print_green_flags, print_flag, print_nums, get_points, print_squares, print_lines, get_cell, get_coord, get_pos = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-game_loop, sWap, clear, guEss, fill_list, get_mines, get_cells, make_guess, get_front_board, get_count, get_value_color, show_mines = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+game_loop, sWap, clear, guEss, fill_list, get_mines, get_cells, make_guess, get_front_board, get_count, get_value_color, show_mines, build_value_string = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 FUNC_LIST = ["fillUnchecked", "printBoardScreen", "printGreenFlags", "printFlag", "printNums", "getPoints", "printSquares", "printLines", "getCell", "getCoord", "getPos",
-"gameLoop", "swap", "clear", "guess", "fillList", "getMines", "getCells", "makeGuess", "getFrontBoard", "getCount", "getValueColor", "showMines"]
+"gameLoop", "swap", "clear", "guess", "fillList", "getMines", "getCells", "makeGuess", "getFrontBoard", "getCount", "getValueColor", "showMines", "buildValueString"]
 
 
 
@@ -77,7 +77,7 @@ def main():
                     pygame.display.flip()
                     time = datetime.datetime.now() - start_time
                     TIMES.append(time)
-                    printFuncs()
+                    #printFuncs()
                 elif event.type == pygame.KEYDOWN:
                     print("Key")
                     #right click
@@ -122,20 +122,28 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+    pygame.quit()
     timeSum = 0
     for time in TIMES:
         print(time)
         timeSum += time.total_seconds()
     print("Average: " + str((timeSum / len(TIMES))))
     timeSum = 0
+    timeZeros = 0
+    timeNonZeros = 0
     print("Make Guess Times:")
     for time in MAKE_GUESS_TIMES:
-        print(time)
-        timeSum += time.total_seconds()
-    print("Average: " + str((timeSum / len(MAKE_GUESS_TIMES))))
+        if(time >= datetime.timedelta(milliseconds=1)):
+            timeSum += time.total_seconds()
+            timeNonZeros += 1
+            print(time)
+        else:
+            timeZeros += 1
+    if(timeNonZeros != 0):        
+        print("Average: " + str((timeSum / timeNonZeros)))
+    print("Total zeroes: " + str(timeZeros))
     print("final:")
     printFuncs()
-    pygame.quit()
     
 
     
@@ -393,31 +401,35 @@ def makeGuess(backBoard, frontBoard, guess):
     make_guess += 1
     global HIT_MINE
     start_time = datetime.datetime.now()
-    val = backBoard[guess[0]][guess[1]]
+    x = guess[0]
+    y0 = guess[1]
+    val = backBoard[x][y0]
     if(val == -1):
         HIT_MINE = True
-    elif(val == 0):
-        cells = getCells(guess[0],guess[1])
-        frontBoard[guess[0]][guess[1]] = ""
-        if(cells[0]):
-            y = guess[1]-1
-            frontBoard = makeGuess(backBoard, frontBoard, (guess[0],y)) if frontBoard[guess[0]][y] != "" else frontBoard
-            if(cells[2]):
-                frontBoard = makeGuess(backBoard, frontBoard, (guess[0]-1,y)) if frontBoard[guess[0]-1][y] != "" else frontBoard
-            if(cells[3]):
-                frontBoard = makeGuess(backBoard, frontBoard, (guess[0]+1,y)) if frontBoard[guess[0]+1][y] != "" else frontBoard
-        if(cells[1]):
-            y = guess[1]+1
-            frontBoard = makeGuess(backBoard, frontBoard, (guess[0],y)) if frontBoard[guess[0]][y] != "" else frontBoard
-            if(cells[2]):
-                frontBoard = makeGuess(backBoard, frontBoard, (guess[0]-1,y)) if frontBoard[guess[0]-1][y] != "" else frontBoard
-            if(cells[3]):
-                frontBoard = makeGuess(backBoard, frontBoard, (guess[0]+1,y)) if frontBoard[guess[0]+1][y] != "" else frontBoard
-        if(cells[2]):
-            frontBoard = makeGuess(backBoard, frontBoard, (guess[0]-1, guess[1])) if frontBoard[guess[0]-1][guess[1]] != "" else frontBoard
-        if(cells[3]):
-            frontBoard = makeGuess(backBoard, frontBoard, (guess[0]+1, guess[1])) if frontBoard[guess[0]+1][guess[1]] != "" else frontBoard
-    frontBoard[guess[0]][guess[1]] = buildValueString(val)
+    elif(val == 0 and frontBoard[x][y0] != ""):
+        cells = getCells(x,y0)
+        frontBoard[x][y0] = ""
+        if(cells[0] and frontBoard[x][y0-1] != ""):
+            y = y0-1
+            frontBoard = makeGuess(backBoard, frontBoard, (x,y))
+            if(cells[2] and frontBoard[x-1][y] != ""):
+                frontBoard = makeGuess(backBoard, frontBoard, (x-1,y))
+            if(cells[3] and frontBoard[x+1][y] != ""):
+                frontBoard = makeGuess(backBoard, frontBoard, (x+1,y))
+        if(cells[1] and frontBoard[x][y0+1] != ""):
+            y = y0+1
+            frontBoard = makeGuess(backBoard, frontBoard, (x,y))
+            if(cells[2] and frontBoard[x-1][y] != ""):
+                frontBoard = makeGuess(backBoard, frontBoard, (x-1,y))
+            if(cells[3] and frontBoard[x+1][y] != ""):
+                frontBoard = makeGuess(backBoard, frontBoard, (x+1,y))
+        if(cells[2] and frontBoard[x-1][y0] != ""):
+            frontBoard = makeGuess(backBoard, frontBoard, (x-1, y0))
+            return frontBoard
+        if(cells[3] and frontBoard[x+1][y0] != ""):
+            frontBoard = makeGuess(backBoard, frontBoard, (x+1, y0))
+            return frontBoard
+    frontBoard[x][y0] = buildValueString(val)
     time = datetime.datetime.now() - start_time
     MAKE_GUESS_TIMES.append(time)
     return frontBoard
@@ -477,12 +489,14 @@ def showMines(frontBoard, backBoard, screen, mines):
     return frontBoard
 
 def buildValueString(val):
+    global build_value_string
+    build_value_string += 1
     val = 9 if val == -1 else val
     return getValueColor(val)+"["+str(val)+"]\033[0m"
 
 def printFuncs():
     func_var_list = [fill_unchecked, print_board_screen, print_green_flags, print_flag, print_nums, get_points, print_squares, print_lines, get_cell, get_coord, get_pos,
-game_loop, sWap, clear, guEss, fill_list, get_mines, get_cells, make_guess, get_front_board, get_count, get_value_color, show_mines]
+game_loop, sWap, clear, guEss, fill_list, get_mines, get_cells, make_guess, get_front_board, get_count, get_value_color, show_mines, build_value_string]
     for i in range(len(FUNC_LIST)):
         print(f"{FUNC_LIST[i]}: {func_var_list[i]}")
 
