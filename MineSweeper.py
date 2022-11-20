@@ -1,11 +1,8 @@
 import random
-import os
 import pygame
-import datetime
-BOARD_SIZE = 5
-NUM_MINES = BOARD_SIZE + int(BOARD_SIZE * .25)
+BOARD_SIZE = 8
+NUM_MINES = int(BOARD_SIZE * 2 + BOARD_SIZE * .25)
 HIT_MINE = False
-REAL_HIT_MINE = False
 FLAG = "\u2691"
 BOMB = u"\U0001F4A3"
 flagFlag = False
@@ -13,14 +10,38 @@ RED_FLAG = "\u001b[31m["+FLAG+"]\033[0m"
 RAND_GUESS = (random.randint(-999, 0),random.randint(-999,0))
 BLACK = (0,0,0)
 LGRAY = (50,50,50)
-SCREEN_X = 600
-SCREEN_Y = 600
+SCREEN_X = 800
+SCREEN_Y = 800
 SQUARE_SIZE = SCREEN_X/BOARD_SIZE
+MENU_SCREEN = 600
 
 
 def main():
     global HIT_MINE
-    global REAL_HIT_MINE
+    global BOARD_SIZE
+    global NUM_MINES
+    global SQUARE_SIZE
+
+    REAL_HIT_MINE = False
+    menuRunning = True
+    diffBoard = [10, 14, 18]
+    diffMines = [15, 30, 45]
+    while menuRunning:
+        menu = pygame.display.set_mode([MENU_SCREEN,MENU_SCREEN])
+        printButtons(menu)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                mouseX, mouseY = pygame.mouse.get_pos()
+                difficulty = checkButton(mouseY)
+                print(difficulty)
+                menuRunning = False
+
+    BOARD_SIZE = diffBoard[difficulty]
+    NUM_MINES = diffMines[difficulty]
+    SQUARE_SIZE = SCREEN_X / BOARD_SIZE
     backBoard = fillList(0)
     frontBoard = fillList("[-]")
     unChecked = fillUnchecked()
@@ -91,6 +112,9 @@ def main():
             #gameRunning = gameLoop(frontBoard,backBoard,gameRunning,mines,gameWon)
             # Flip the display
             pygame.display.flip()
+            if(running == False):
+                pygame.quit()
+                quit()
 
         # Done! Time to quit.
         
@@ -110,11 +134,26 @@ def main():
             pygame.display.flip()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                pygame.quit()
+                quit()
     pygame.quit()
+    quit()
 """
 Main loop for game
 """
+def printButtons(menu):
+    colors = [(0,255,0), (0,0,255), (255,0,0)]
+    for i in range(3):
+        r = pygame.Rect(0, i * (MENU_SCREEN / 3), MENU_SCREEN, (MENU_SCREEN / 3))
+        pygame.draw.rect(menu, colors[i], r)
+    pygame.display.flip()
+def checkButton(y):
+    button = -1
+    while(y > 0):
+        y -= MENU_SCREEN / 3
+        button += 1
+    return button
+
 def fillUnchecked():
     unChecked = []
     for i in range(BOARD_SIZE):
@@ -307,7 +346,6 @@ def makeGuess(backBoard, frontBoard, guess):
 
         if(cells[2] and frontBoard[x-1][y0] != ""):
             frontBoard = makeGuess(backBoard, frontBoard, (x-1, y0))
-            return frontBoard
 
         if(cells[3] and frontBoard[x+1][y0] != ""):
             frontBoard = makeGuess(backBoard, frontBoard, (x+1, y0))
