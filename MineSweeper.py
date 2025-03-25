@@ -21,18 +21,19 @@ def main():
     global BOARD_SIZE
     global NUM_MINES
     global SQUARE_SIZE
+    global REAL_HIT_MINE, HIT_MINE, backBoard, frontBoard, unChecked, mines, gameRunning, gameWon, screen
 
     REAL_HIT_MINE = False
     menuRunning = True
     diffBoard = [10, 14, 18]
     diffMines = [15, 30, 45]
+    menu = pygame.display.set_mode([MENU_SCREEN,MENU_SCREEN])
     while menuRunning:
-        menu = pygame.display.set_mode([MENU_SCREEN,MENU_SCREEN])
         printButtons(menu)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                quit()
+                exit()
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mouseX, mouseY = pygame.mouse.get_pos()
                 difficulty = checkButton(mouseY)
@@ -42,29 +43,10 @@ def main():
     BOARD_SIZE = diffBoard[difficulty]
     NUM_MINES = diffMines[difficulty]
     SQUARE_SIZE = SCREEN_X / BOARD_SIZE
-    backBoard = fillList(0)
-    frontBoard = fillList("[-]")
-    unChecked = fillUnchecked()
-    
-    gameRunning = True
-    gameWon = False
-    
-    mines = []
-    #Generate and place mines
-    mines = getMines(NUM_MINES)
-    for (x,y) in mines:
-        backBoard[x][y] = -1
-
-    #print(backBoard)
-    printBoardGame(frontBoard)
-    backBoard = getFrontBoard(backBoard)
-    printBoardTest(backBoard)
     
     pygame.init()
-    screen = pygame.display.set_mode([SCREEN_X, SCREEN_Y])
     running = True
-    screen.fill(LGRAY)
-    printLines(screen)
+    init_game()
     while running:
         while gameRunning:
             # Did the user click the window close button?
@@ -91,6 +73,8 @@ def main():
                     #printFuncs()
                 elif event.type == pygame.KEYDOWN:
                     print("Key")
+                    if event.key == pygame.K_r:
+                        init_game()
                     #right click
             
             if(HIT_MINE):
@@ -141,6 +125,29 @@ def main():
 """
 Main loop for game
 """
+def init_game():
+    global REAL_HIT_MINE, HIT_MINE, backBoard, frontBoard, unChecked, mines, gameRunning, gameWon, screen
+    
+    REAL_HIT_MINE = False
+    HIT_MINE = False
+    gameRunning = True
+    gameWon = False
+    
+    backBoard = fillList(0)
+    frontBoard = fillList("[-]")
+    unChecked = fillUnchecked()
+    
+    mines = getMines(NUM_MINES)
+    for (x,y) in mines:
+        backBoard[x][y] = -1
+    
+    backBoard = getFrontBoard(backBoard)
+    screen = pygame.display.set_mode([SCREEN_X, SCREEN_Y])
+    screen.fill(LGRAY)
+    printLines(screen)
+    printBoardScreen(screen, frontBoard, unChecked, backBoard)
+    pygame.display.flip()
+
 def printButtons(menu):
     colors = [(0,255,0), (0,0,255), (255,0,0)]
     for i in range(3):
